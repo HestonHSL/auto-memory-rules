@@ -24,12 +24,12 @@ get_editor_config() {
             echo "multi_file:true"
             ;;
         "cursor")
-            echo "output_dir:."
+            echo "output_dir:.cursor/rules"
             echo "file_prefix:"
-            echo "file_suffix:.cursorrules"
+            echo "file_suffix:-rules.md"
             echo "use_frontmatter:false"
             echo "frontmatter_type:none"
-            echo "multi_file:false"
+            echo "multi_file:true"
             ;;
         "windsurf")
             echo "output_dir:."
@@ -38,6 +38,22 @@ get_editor_config() {
             echo "use_frontmatter:false"
             echo "frontmatter_type:none"
             echo "multi_file:false"
+            ;;
+        "antigravity")
+            echo "output_dir:."
+            echo "file_prefix:"
+            echo "file_suffix:AGENTS.md"
+            echo "use_frontmatter:false"
+            echo "frontmatter_type:none"
+            echo "multi_file:false"
+            ;;
+        "claude"|"claude-code")
+            echo "output_dir:.claude/rules"
+            echo "file_prefix:"
+            echo "file_suffix:-rules.md"
+            echo "use_frontmatter:false"
+            echo "frontmatter_type:none"
+            echo "multi_file:true"
             ;;
         *)
             echo "error:Unknown editor: $editor"
@@ -68,6 +84,21 @@ get_kiro_frontmatter() {
             ;;
         state)
             scene_desc="在设计状态管理、处理数据流时应用"
+            ;;
+        backend)
+            scene_desc="在设计后端分层、实现服务逻辑、处理领域建模时应用"
+            ;;
+        database)
+            scene_desc="在设计数据库表结构、编写 SQL、优化索引与事务时应用"
+            ;;
+        infra)
+            scene_desc="在配置部署流程、CI/CD、容器与监控告警时应用"
+            ;;
+        testing)
+            scene_desc="在编写单元测试、集成测试、端到端测试时应用"
+            ;;
+        security)
+            scene_desc="在实现认证鉴权、权限控制、输入校验与安全加固时应用"
             ;;
         pattern)
             scene_desc="在进行架构设计、选择设计模式时应用"
@@ -118,6 +149,21 @@ get_frieren_frontmatter() {
         state)
             scene_desc="在设计状态管理、处理数据流时应用"
             ;;
+        backend)
+            scene_desc="在设计后端分层、实现服务逻辑、处理领域建模时应用"
+            ;;
+        database)
+            scene_desc="在设计数据库表结构、编写 SQL、优化索引与事务时应用"
+            ;;
+        infra)
+            scene_desc="在配置部署流程、CI/CD、容器与监控告警时应用"
+            ;;
+        testing)
+            scene_desc="在编写单元测试、集成测试、端到端测试时应用"
+            ;;
+        security)
+            scene_desc="在实现认证鉴权、权限控制、输入校验与安全加固时应用"
+            ;;
         pattern)
             scene_desc="在进行架构设计、选择设计模式时应用"
             ;;
@@ -157,4 +203,7 @@ list_supported_editors() {
     echo "frieren"
     echo "cursor"
     echo "windsurf"
+    echo "antigravity"
+    echo "claude"
+    echo "claude-code"
 }

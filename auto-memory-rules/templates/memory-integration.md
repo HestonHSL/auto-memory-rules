@@ -37,7 +37,7 @@
 
 **立即行动**：
 - 创建记忆文件到 `{SKILLS_PATH}/auto-memory-rules/memory/YYYY-MM-DD-{category}-{brief}.md`
-- 使用 SKILL.md 中的标准模板和分类（api/hook/component/types/state/pattern/convention/quality/workflow/general）
+- 使用 SKILL.md 中的标准模板和分类（api/types/component/hook/state/backend/database/infra/testing/security/pattern/convention/quality/workflow/general）
 - 告知用户："我已记录这条记忆，下次会自动应用"
 
 ### 3. 对话结束

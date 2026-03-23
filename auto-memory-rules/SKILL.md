@@ -58,18 +58,16 @@ description: 触发场景：(1) 显式记忆请求——记住、记录、别忘
 
 ### 1. 对话开始
 
-- 检查 `memory/` 目录，不存在则初始化
+- 检查技能目录下的 `memory/` 目录（例如：`.agents/skills/auto-memory-rules/memory/`），不存在则初始化
 - 根据用户请求搜索相关记忆并加载到上下文
 
 ### 2. 对话执行
 
-1. 反思 → 提取原则 → 创建记忆文件到 `memory/`
+1. 反思 → 提取原则 → 创建记忆文件到技能目录下的 `memory/` 目录
 2. 在当前任务中立即应用
 3. 告知用户："我已记录这条记忆，下次会自动应用"
 
-### 3. 对话结束（结算）
-
-触发条件：明确转折词（另外、再来、顺便）、用户要求新增规则、对话自然结束
+### 3. 规则更新（结算）
 
 **执行步骤：**
 ```bash
@@ -78,8 +76,8 @@ description: 触发场景：(1) 显式记忆请求——记住、记录、别忘
 # 未安装 hook 时手动运行：
 bash scripts/generate-memory-artifacts.sh
 
-# 步骤 2：更新编辑器规则（根据当前编辑器环境自动判断）
-bash scripts/generate-rules.sh <当前编辑器>
+# 步骤 2：更新平台规则（自动探测并更新当前项目中的所有平台）
+bash scripts/generate-rules.sh
 ```
 
 输出结算报告：
@@ -88,18 +86,24 @@ bash scripts/generate-rules.sh <当前编辑器>
 - 新增记忆：N 条
 - 更新索引：memory/index.md
 - 更新清单：memory/CHECKLIST.md
-- 更新编辑器规则：<当前编辑器>
+- 更新平台规则：<自动探测到的平台>
 ```
 
-## 安装（一次性）
+## 安装与兼容平台
 
-在使用本 skill 的项目根目录下运行，注册 Claude Code hook：
+- Kiro：技能目录 `.kiro/skills/auto-memory-rules/`，可用 `generate-integration-rules.sh` + `generate-rules.sh`
+- Antigravity：技能目录 `.agents/skills/auto-memory-rules/`，可用 `generate-integration-rules.sh` + `generate-rules.sh`
+- Cursor：技能目录 `.cursor/skills/auto-memory-rules/`（兼容 `.agents/skills/`），规则输出到 `.cursor/rules/`
+- Windsurf：技能目录 `.windsurf/skills/auto-memory-rules/`，可用 `generate-rules.sh windsurf` 生成规则文件
+- Claude Code：技能目录 `.claude/skills/auto-memory-rules/`，规则输出到 `.claude/rules/`；可选安装 hook 自动更新记忆索引（不安装也可手动执行脚本）
+
+如需在 Claude Code 启用自动索引更新，在使用本 skill 的项目根目录运行：
 
 ```bash
 bash <skill所在路径>/auto-memory-rules/scripts/setup-hooks.sh
 ```
 
-安装后，每次向 `memory/` 写入 `.md` 文件，`generate-memory-artifacts.sh` 会自动触发，无需 AI 手动调用。
+安装后，每次向技能目录下的 `memory/` 目录写入 `.md` 文件，`generate-memory-artifacts.sh` 会自动触发；其他平台可手动运行该脚本完成结算。
 
 ## 标准 Category
 
@@ -110,6 +114,11 @@ bash <skill所在路径>/auto-memory-rules/scripts/setup-hooks.sh
 | `component` | React 组件、JSX、Props 设计 |
 | `hook` | 自定义 Hook、useXxx 封装 |
 | `state` | 状态设计、数据流、状态恢复 |
+| `backend` | 后端服务、业务分层、控制器/服务/仓储设计 |
+| `database` | 数据库建模、SQL、索引、事务、迁移 |
+| `infra` | 部署、CI/CD、容器、环境变量、监控告警 |
+| `testing` | 单元测试、集成测试、E2E、测试策略 |
+| `security` | 认证鉴权、权限模型、输入校验、安全基线 |
 | `pattern` | 设计模式、架构模式、代码组织 |
 | `convention` | 命名、格式、代码风格、注释 |
 | `quality` | 可维护性、性能优化、最佳实践 |

@@ -7,9 +7,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 RULES_DIR="$SCRIPT_DIR/../memory"
 
 # 动态检测项目根目录
-# 如果在 .kiro/skills/ 或 .frieren/skills/ 下，往上3层
+# 如果在 .kiro/skills/、.frieren/skills/、.agents/skills/ 或 .agent/skills/ 下，往上3层
 # 否则往上2层
-if echo "$SCRIPT_DIR" | grep -q "/\.kiro/skills/\|/\.frieren/skills/"; then
+if echo "$SCRIPT_DIR" | grep -q "/\.kiro/skills/\|/\.frieren/skills/\|/\.agents/skills/\|/\.agent/skills/"; then
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 else
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -23,19 +23,74 @@ source "$SCRIPT_DIR/editor-config.sh"
 # 显示使用说明
 show_usage() {
     cat << EOF
-使用方法: $0 <editor>
+使用方法: $0 [target-platform|auto|all]
 
-支持的编辑器:
-  kiro      - Kiro AI 编程助手
-  frieren   - Frieren AI 编程助手
-  cursor    - Cursor 编辑器
-  windsurf  - Windsurf (Codeium)
+支持的平台:
+  kiro         - Kiro
+  cursor       - Cursor
+  windsurf     - Windsurf
+  antigravity  - Antigravity
+  claude       - Claude Code（输出到 .claude/rules/）
+  frieren      - Frieren（兼容保留）
 
 示例:
+  $0              # 自动探测并更新当前项目中的所有平台
+  $0 auto         # 自动探测并更新当前项目中的所有平台
+  $0 all          # 强制更新所有支持的平台
   $0 kiro
   $0 cursor
+  $0 windsurf
+  $0 antigravity
+  $0 claude
 
 EOF
+}
+
+# 自动探测当前项目中已存在的平台痕迹
+detect_present_platforms() {
+    local detected=()
+
+    add_if_missing() {
+        local target="$1"
+        for existing in "${detected[@]}"; do
+            if [ "$existing" = "$target" ]; then
+                return
+            fi
+        done
+        detected+=("$target")
+    }
+
+    # Kiro
+    if [ -d "$PROJECT_ROOT/.kiro" ] || [ -d "$PROJECT_ROOT/.kiro/skills" ]; then
+        add_if_missing "kiro"
+    fi
+
+    # Cursor（workspace skills/rules）
+    if [ -d "$PROJECT_ROOT/.cursor" ] || [ -d "$PROJECT_ROOT/.cursor/skills" ] || [ -d "$PROJECT_ROOT/.cursor/rules" ] || [ -d "$PROJECT_ROOT/.agents/skills" ]; then
+        add_if_missing "cursor"
+    fi
+
+    # Windsurf（workspace skills: .windsurf/skills）
+    if [ -d "$PROJECT_ROOT/.windsurf" ] || [ -d "$PROJECT_ROOT/.windsurf/skills" ] || [ -f "$PROJECT_ROOT/.windsurfrules" ]; then
+        add_if_missing "windsurf"
+    fi
+
+    # Antigravity
+    if [ -d "$PROJECT_ROOT/.agents" ] || [ -d "$PROJECT_ROOT/.agents/skills" ] || [ -d "$PROJECT_ROOT/.agent" ] || [ -d "$PROJECT_ROOT/.agent/skills" ] || [ -f "$PROJECT_ROOT/AGENTS.md" ]; then
+        add_if_missing "antigravity"
+    fi
+
+    # Claude Code（workspace skills/rules）
+    if [ -d "$PROJECT_ROOT/.claude" ] || [ -d "$PROJECT_ROOT/.claude/skills" ] || [ -d "$PROJECT_ROOT/.claude/rules" ]; then
+        add_if_missing "claude"
+    fi
+
+    # Frieren（兼容）
+    if [ -d "$PROJECT_ROOT/.frieren" ] || [ -d "$PROJECT_ROOT/.frieren/skills" ] || [ -d "$PROJECT_ROOT/.frieren/rules" ]; then
+        add_if_missing "frieren"
+    fi
+
+    echo "${detected[*]}"
 }
 
 # 获取 category 显示名称
@@ -46,6 +101,11 @@ get_category_display_name() {
         component) echo "组件开发" ;;
         hook) echo "Hook 开发" ;;
         state) echo "状态管理" ;;
+        backend) echo "后端开发" ;;
+        database) echo "数据库设计" ;;
+        infra) echo "基础设施" ;;
+        testing) echo "测试工程" ;;
+        security) echo "安全规范" ;;
         pattern) echo "设计模式" ;;
         convention) echo "编码规范" ;;
         quality) echo "代码质量" ;;
@@ -162,7 +222,7 @@ generate_multi_file_rules() {
     local use_frontmatter="$5"
     local frontmatter_type="$6"
     
-    local categories="api types component hook state pattern convention quality workflow general other"
+    local categories="api types component hook state backend database infra testing security pattern convention quality workflow general other"
     
     for category_key in $categories; do
         local category_display=$(get_category_display_name "$category_key")
@@ -184,7 +244,7 @@ generate_multi_file_rules() {
             if [ -f "$rule" ]; then
                 if [ "$category_key" = "other" ]; then
                     # 未分类或不在标准列表中
-                    if ! grep -q "^category:" "$rule" || ! grep -E "^category:.*(api|types|component|hook|state|pattern|convention|quality|workflow)" "$rule"; then
+                    if ! grep -q "^category:" "$rule" || ! grep -E "^category:.*(api|types|component|hook|state|backend|database|infra|testing|security|pattern|convention|quality|workflow|general)" "$rule"; then
                         has_rules=true
                         extract_rule_essentials "$rule" >> "$temp_file"
                         echo -e "\n---\n" >> "$temp_file"
@@ -229,7 +289,7 @@ generate_single_file_rules() {
 
 EOF
     
-    local categories="api types component hook state pattern convention quality workflow general other"
+    local categories="api types component hook state backend database infra testing security pattern convention quality workflow general other"
     
     for category_key in $categories; do
         local category_display=$(get_category_display_name "$category_key")
@@ -247,7 +307,7 @@ EOF
                 local match=false
                 
                 if [ "$category_key" = "other" ]; then
-                    if ! grep -q "^category:" "$rule" || ! grep -E "^category:.*(api|types|component|hook|state|pattern|convention|quality|workflow)" "$rule"; then
+                    if ! grep -q "^category:" "$rule" || ! grep -E "^category:.*(api|types|component|hook|state|backend|database|infra|testing|security|pattern|convention|quality|workflow|general)" "$rule"; then
                         match=true
                     fi
                 else
@@ -276,21 +336,33 @@ EOF
 
 # 主函数
 main() {
-    # 检查参数
-    if [ $# -eq 0 ]; then
-        show_usage
-        exit 1
-    fi
-    
-    local editor="$1"
-    
-    # 验证编辑器
-    if ! list_supported_editors | grep -q "^$editor$"; then
-        echo "❌ 不支持的编辑器: $editor"
-        echo ""
-        show_usage
-        exit 1
-    fi
+    local mode="${1:-auto}"
+    local target_platforms=""
+
+    case "$mode" in
+        "auto")
+            target_platforms="$(detect_present_platforms)"
+            if [ -z "$target_platforms" ]; then
+                echo "⚠️  未探测到平台痕迹（.cursor/.claude/.kiro/.agents/.windsurf 等）"
+                echo "请显式传入目标平台，或先初始化对应平台目录。"
+                echo ""
+                show_usage
+                exit 1
+            fi
+            ;;
+        "all")
+            target_platforms="$(list_supported_editors | tr '\n' ' ')"
+            ;;
+        *)
+            if ! list_supported_editors | grep -q "^$mode$"; then
+                echo "❌ 不支持的目标平台: $mode"
+                echo ""
+                show_usage
+                exit 1
+            fi
+            target_platforms="$mode"
+            ;;
+    esac
     
     echo "📖 读取规则文件..."
     
@@ -309,46 +381,50 @@ main() {
         exit 0
     fi
     
-    # 获取编辑器配置
-    local config=$(get_editor_config "$editor")
-    if echo "$config" | grep -q "^error:"; then
-        echo "❌ $(echo "$config" | cut -d: -f2-)"
-        exit 1
-    fi
-    
-    local output_dir=$(parse_config "$config" "output_dir")
-    local file_prefix=$(parse_config "$config" "file_prefix")
-    local file_suffix=$(parse_config "$config" "file_suffix")
-    local use_frontmatter=$(parse_config "$config" "use_frontmatter")
-    local frontmatter_type=$(parse_config "$config" "frontmatter_type")
-    local multi_file=$(parse_config "$config" "multi_file")
-    
-    # 创建输出目录
-    local full_output_dir="$PROJECT_ROOT/$output_dir"
-    mkdir -p "$full_output_dir"
-    
-    echo "📝 生成 $editor 规则文件..."
-    
-    if [ "$multi_file" = "true" ]; then
-        # 多文件模式
-        generate_multi_file_rules "$editor" "$full_output_dir" "$file_prefix" "$file_suffix" "$use_frontmatter" "$frontmatter_type"
-    else
-        # 单文件模式
-        local output_file="$full_output_dir/$file_suffix"
-        generate_single_file_rules "$editor" "$output_file" "$use_frontmatter" "$frontmatter_type"
-    fi
-    
+    echo "🎯 目标平台: $target_platforms"
     echo ""
-    echo "✨ 规则已生成到: $full_output_dir"
-    echo ""
+
+    for editor in $target_platforms; do
+        # 获取平台配置
+        local config=$(get_editor_config "$editor")
+        if echo "$config" | grep -q "^error:"; then
+            echo "❌ $(echo "$config" | cut -d: -f2-)"
+            exit 1
+        fi
+
+        local output_dir=$(parse_config "$config" "output_dir")
+        local file_prefix=$(parse_config "$config" "file_prefix")
+        local file_suffix=$(parse_config "$config" "file_suffix")
+        local use_frontmatter=$(parse_config "$config" "use_frontmatter")
+        local frontmatter_type=$(parse_config "$config" "frontmatter_type")
+        local multi_file=$(parse_config "$config" "multi_file")
+
+        # 创建输出目录
+        local full_output_dir="$PROJECT_ROOT/$output_dir"
+        mkdir -p "$full_output_dir"
+
+        echo "📝 生成 $editor 规则文件..."
+
+        if [ "$multi_file" = "true" ]; then
+            # 多文件模式
+            generate_multi_file_rules "$editor" "$full_output_dir" "$file_prefix" "$file_suffix" "$use_frontmatter" "$frontmatter_type"
+        else
+            # 单文件模式
+            local output_file="$full_output_dir/$file_suffix"
+            generate_single_file_rules "$editor" "$output_file" "$use_frontmatter" "$frontmatter_type"
+        fi
+
+        echo "✨ [$editor] 规则已生成到: $full_output_dir"
+        echo ""
+    done
+
     echo "📋 统计信息:"
-    
     # 统计各 category 的规则数量
-    local categories="api types component hook state pattern convention quality workflow general other"
+    local categories="api types component hook state backend database infra testing security pattern convention quality workflow general other"
     for category_key in $categories; do
         local category_display=$(get_category_display_name "$category_key")
         local count
-        
+
         if [ "$category_key" = "other" ]; then
             count=0
             for rule in "$RULES_DIR"/*.md; do
@@ -357,7 +433,7 @@ main() {
                     continue
                 fi
                 if [ -f "$rule" ]; then
-                    if ! grep -q "^category:" "$rule" || ! grep -E "^category:.*(api|types|component|hook|state|pattern|convention|quality|workflow)" "$rule"; then
+                    if ! grep -q "^category:" "$rule" || ! grep -E "^category:.*(api|types|component|hook|state|backend|database|infra|testing|security|pattern|convention|quality|workflow|general)" "$rule"; then
                         count=$((count + 1))
                     fi
                 fi
@@ -374,7 +450,7 @@ main() {
                 fi
             done
         fi
-        
+
         if [ "$count" -gt 0 ]; then
             echo "  $category_display: $count 条规则"
         fi
